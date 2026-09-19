@@ -10,12 +10,12 @@ import {
   ShieldCheck,
   AlertTriangle,
   Globe,
+  Mail,
   Lock,
   Copy,
   Check,
   RefreshCw,
   Search,
-  Sparkles,
   Terminal,
   Activity,
   AlertCircle,
@@ -30,29 +30,6 @@ import {
   extractDomain
 } from './lib/detector';
 
-const QUICK_SAMPLES = [
-  {
-    label: 'Faux PayPal',
-    url: 'https://paypal-verification-client.com/login',
-    danger: true,
-  },
-  {
-    label: 'Faux Impôts',
-    url: 'http://service-impots-remboursement-update.net',
-    danger: true,
-  },
-  {
-    label: 'Faux Chronopost',
-    url: 'https://chronopost-suivi-douane.xyz/paiement',
-    danger: true,
-  },
-  {
-    label: 'Site Officiel (Ameli)',
-    url: 'https://www.ameli.fr',
-    danger: false,
-  },
-];
-
 export default function App() {
   const [inputText, setInputText] = useState<string>('');
   const [isScanning, setIsScanning] = useState<boolean>(false);
@@ -61,26 +38,25 @@ export default function App() {
   const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({});
   const [, startTransition] = useTransition();
 
-  // Traiter l'analyse
-  const handleAnalyze = (overrideUrl?: string) => {
-    const target = (overrideUrl ?? inputText).trim();
+  // Traiter l'analyse (E-mail ou URL)
+  const handleAnalyze = (overrideInput?: string) => {
+    const target = (overrideInput ?? inputText).trim();
     if (!target) return;
     setIsScanning(true);
+
+    // Détection automatique : URL vs E-mail / Message
+    const isLikelyUrl = /^(https?:\/\/|[a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^\s]*)?$/i.test(target) && !target.includes(' ') && !target.includes('\n');
+    const detectedType: 'url' | 'message' = isLikelyUrl ? 'url' : 'message';
+
     // Simulation d'un scan cyber réaliste (350ms pour feedback sensoriel)
     setTimeout(() => {
       startTransition(() => {
-        const analysis = analyzeInput(target, 'url');
+        const analysis = analyzeInput(target, detectedType);
         setResult(analysis);
         setIsScanning(false);
         setCompletedSteps({});
       });
     }, 350);
-  };
-
-  // Charger un exemple rapide
-  const handleSelectSample = (sampleUrl: string) => {
-    setInputText(sampleUrl);
-    handleAnalyze(sampleUrl);
   };
 
   // Coller depuis le presse-papiers
@@ -170,7 +146,7 @@ export default function App() {
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                Détecteur intelligent de tentatives de phishing et menaces en ligne
+                Détecteur de phishing spécialisé sur E-mails & URLs
               </p>
             </div>
           </div>
@@ -191,23 +167,22 @@ export default function App() {
         <section id="hero-search-section" className="flex flex-col items-center text-center gap-6 pt-2 sm:pt-6">
           <div className="flex flex-col gap-2 max-w-xl">
             <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-              Analysez l'authenticité d'une <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-300">URL suspecte</span>
+              Détecteur de Phishing <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-300">E-mails & URLs</span>
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              Collez simplement l'adresse web reçue par SMS, e-mail ou messagerie pour détecter instantanément les usurpations et pièges de phishing.
-            </p>
           </div>
 
           {/* Container Suspendu avec jeu de lumière successif sur les bords */}
           <div className="w-full max-w-2xl floating-search-container">
             <div className="glowing-border-wrapper">
               <div className="glowing-border-inner p-2 sm:p-2.5 flex items-center gap-2 sm:gap-3">
-                {/* Icône de recherche cyber */}
-                <div className="pl-2 sm:pl-3 text-cyan-400 shrink-0">
-                  <Globe className="w-5 h-5 text-cyan-400/90" />
+                {/* Icônes de détection E-mail & URL */}
+                <div className="pl-2 sm:pl-3 flex items-center gap-1 text-cyan-400 shrink-0">
+                  <Mail className="w-4 h-4 text-cyan-400/90" />
+                  <span className="text-slate-600 text-xs">/</span>
+                  <Globe className="w-4 h-4 text-sky-400/90" />
                 </div>
 
-                {/* Champ de saisie URL */}
+                {/* Champ de saisie E-mail / URL */}
                 <input
                   id="search-url-input"
                   type="text"
@@ -216,7 +191,7 @@ export default function App() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleAnalyze();
                   }}
-                  placeholder="Collez ou entrez une URL (ex: https://paypal-securite-login.com)..."
+                  placeholder="Collez une URL ou un e-mail suspect (ex: https://... ou contact@...)..."
                   className="w-full bg-transparent border-none text-sm sm:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-0 font-mono py-2"
                   autoFocus
                 />
@@ -236,7 +211,7 @@ export default function App() {
                     <button
                       id="btn-paste-url"
                       onClick={handlePaste}
-                      title="Coller l'URL"
+                      title="Coller l'e-mail ou l'URL"
                       className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 transition cursor-pointer border border-slate-700/60"
                     >
                       <ClipboardPaste className="w-3.5 h-3.5" />
@@ -265,25 +240,6 @@ export default function App() {
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* Suggestions d'exemples rapides cliquables */}
-            <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2 text-xs">
-              <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-cyan-400" />
-                Exemples rapides :
-              </span>
-              {QUICK_SAMPLES.map((sample, idx) => (
-                <button
-                  key={idx}
-                  id={`sample-chip-${idx}`}
-                  onClick={() => handleSelectSample(sample.url)}
-                  className="px-2.5 py-1 rounded-full bg-slate-900/90 hover:bg-slate-800 text-[11px] text-slate-300 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/40 transition cursor-pointer flex items-center gap-1.5"
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${sample.danger ? 'bg-rose-500' : 'bg-emerald-400'}`} />
-                  <span>{sample.label}</span>
-                </button>
-              ))}
             </div>
           </div>
         </section>
@@ -743,20 +699,6 @@ export default function App() {
 
         {/* Fin section de résultats */}
       </main>
-
-      {/* Footer épuré */}
-      <footer id="app-footer" className="border-t border-slate-800/60 bg-[#040816] py-5 text-xs text-slate-400 mt-auto">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-cyan-400" />
-            <span className="font-semibold text-slate-300">Phis Guard</span>
-            <span>— Moteur heuristique d'analyse et de protection anti-phishing</span>
-          </div>
-          <div className="text-slate-500 font-mono text-[11px]">
-            Traitement local et confidentiel • KillPhish AI Matrix
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

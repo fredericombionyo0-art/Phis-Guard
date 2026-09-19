@@ -1,6 +1,6 @@
 {
   "name": "Phis Guard",
-  "description": "Détecteur intelligent de tentatives de phishing et menaces en ligne (e-mails, SMS et URLs).",
+  "description": "Détecteur intelligent de tentatives de phishing spécialisé sur E-mails et URLs.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
